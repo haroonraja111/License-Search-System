@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}
+    {% if record %}
+        License Detail{% if record.name %} - {{ record.name }}{% endif %}
+    {% else %}
+        Record Not Found
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid license-detail-pro py-5">
+    {% if record %}
+        <div class="row justify-content-center">
+            <div class="col-xl-10 col-lg-12">
+                <div class="row g-4">
+                    <!-- Main License Information -->
+                    <div class="col-md-5">
+                        <div class="card pro-card h-100 border-0 shadow">
+                            <div class="card-header pro-header d-flex align-items-center">
+                                <span class="pro-icon me-2"><i class="fas fa-id-card"></i></span>
+                                <span class="pro-title">License Details</span>
+                                {% if model_name == "License" %}
+                                    <span class="badge bg-success ms-2 pro-badge">(New Database)</span>
+                                {% elif model_name == "OldLicense" %}
+                                    <span class="badge bg-secondary ms-2 pro-badge">(Old Database)</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body px-4 py-3">
+                                <dl class="row mb-0 pro-dl">
+                                    {% for field in fields %}
+                                        {% if field and field.name != 'computerno' %}
+                                            <dt class="col-5 pro-dt">{{ field.verbose_name|capfirst }}</dt>
+                                            <dd class="col-7 pro-dd">
+                                                {% with value=record|get_attribute:field.name %}
+                                                    {% if value is not None and value != "" %}
+                                                        {{ value }}
+                                                    {% else %}
+                                                        <span class="text-muted">—</span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </dd>
+                                        {% endif %}
+                                    {% endfor %}
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Related Data (Endorsements etc.) -->
+                    <div class="col-md-7">
+                        <div class="d-flex flex-column gap-4">
+                        {% if model_name == "OldLicense" and related_data and related_data.Endo %}
+                            <!-- Old Database Endorsement Data -->
+                            <div class="card pro-card border-0 shadow">
+                                <div class="card-header pro-header d-flex align-items-center">
+                                    <span class="pro-icon me-2"><i class="fas fa-stamp"></i></span>
+                                    <span class="pro-title">Endorsement Data</span>
+                                    <span class="ms-2 text-muted small">({{ related_data.Endo|length }} records)</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive pro-table-responsive">
+                                        <table class="table pro-table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    {% comment %} <th>ser</th> {% endcomment %}
+                                                    <th>License</th>
+                                                    <th>User</th>
+                                                    <th>User 1</th>
+                                                    <th>Vehicle</th>
+                                                    <th>Issue</th>
+                                                    <th>Expiry</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for endo_record in related_data.Endo %}
+                                                    <tr>
+                                                        <td class="text-center">
+                                                            <span class="badge bg-primary pro-badge">{{ forloop.counter }}</span>
+                                                        </td>
+                                                        {% comment %} <td>{{ endo_record.serialno|default_if_none:"—"|default:"—" }}</td> {% endcomment %}
+                                                        <td>{{ endo_record.licenseno|default_if_none:"—"|default:"—" }}</td>
+                                                        <td>{{ endo_record.endo_user|default_if_none:"—"|default:"—" }}</td>
+                                                        <td>{{ endo_record.endo_user1|default_if_none:"—"|default:"—" }}</td>
+                                                        <td>{{ endo_record.vehicletype|default_if_none:"—"|default:"—" }}</td>
+                                                        <td>
+                                                            {% if endo_record.endo_issue %}
+                                                                <span class="badge bg-success pro-badge">{{ endo_record.endo_issue }}</span>
+                                                            {% else %}
+                                                                <span class="text-muted">—</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ endo_record.endo_exp|default_if_none:"—"|default:"—" }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if model_name == "License" %}
+                            <!-- New Database Related Data -->
+                            {% if related_data.LicenseVehicle and related_data.LicenseVehicle|length > 0 %}
+                                <div class="card pro-card border-0 shadow">
+                                    <div class="card-header pro-header d-flex align-items-center">
+                                        <span class="pro-icon me-2"><i class="fas fa-car"></i></span>
+                                        <span class="pro-title">License Vehicle Types</span>
+                                        <span class="ms-2 text-muted small">({{ related_data.LicenseVehicle|length }} records)</span>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive pro-table-responsive">
+                                            <table class="table pro-table mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">ID</th>
+                                                        <th>License No</th>
+                                                        <th>Vehicle Type</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for vehicle in related_data.LicenseVehicle %}
+                                                        {% if vehicle %}
+                                                            <tr>
+                                                                <td class="text-center">
+                                                                    <span class="badge bg-primary pro-badge">{{ forloop.counter }}</span>
+                                                                </td>
+                                                                <td>{{ vehicle.licenseno|default_if_none:"—" }}</td>
+                                                                <td>{{ vehicle.vehicletype|default_if_none:"—" }}</td>
+                                                                <td>
+                                                                    {% if vehicle.status == 1 %}
+                                                                        <span class="badge bg-success pro-badge">Active</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-secondary pro-badge">Inactive</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if related_data.LicenseUpdation and related_data.LicenseUpdation|length > 0 %}
+                                <div class="card pro-card border-0 shadow">
+                                    <div class="card-header pro-header d-flex align-items-center">
+                                        <span class="pro-icon me-2"><i class="fas fa-sync-alt"></i></span>
+                                        <span class="pro-title">License Updations</span>
+                                        <span class="ms-2 text-muted small">({{ related_data.LicenseUpdation|length }} records)</span>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive pro-table-responsive">
+                                            <table class="table pro-table mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">ID</th>
+                                                        <th>Number</th>
+                                                        <th>Updation Type</th>
+                                                        <th>Status</th>
+                                                        <th>New Date</th>
+                                                        <th>Enter By</th>
+                                                        <th>Type</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for updation in related_data.LicenseUpdation %}
+                                                        {% if updation %}
+                                                            <tr>
+                                                                <td class="text-center">
+                                                                    <span class="badge bg-primary pro-badge">{{ forloop.counter }}</span>
+                                                                </td>
+                                                                <td>{{ updation.number|default_if_none:"—" }}</td>
+                                                                <td>{{ updation.updationtypeno|default_if_none:"—" }}</td>
+                                                                <td>
+                                                                    {% if updation.status == "Active" %}
+                                                                        <span class="badge bg-success pro-badge">Active</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-secondary pro-badge">{{ updation.status|default:"—" }}</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>{{ updation.newissuedate|default_if_none:"—"|date:"F d, Y" }}</td>
+                                                                <td>{{ updation.enterby|default_if_none:"—" }}</td>
+                                                                <td>{{ updation.type|default_if_none:"—" }}</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if not related_data.LicenseVehicle and not related_data.LicenseUpdation and not related_data.EndorseNumber and not related_data.UpdationType and not related_data.VehicleType %}
+                                <div class="card pro-card border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <span class="pro-icon mb-2"><i class="fas fa-info-circle text-muted"></i></span>
+                                        <p class="text-muted mb-0">No related data found for this license</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if related_data %}
+                            {% for rel_model_name, objects in related_data.items %}
+                                {% if rel_model_name != 'Endo' and rel_model_name != 'LicenseVehicle' and rel_model_name != 'LicenseUpdation' and rel_model_name != 'EndorseNumber' and rel_model_name != 'UpdationType' and rel_model_name != 'VehicleType' and objects and objects|length > 0 %}
+                                    <div class="card pro-card border-0 shadow">
+                                        <div class="card-header pro-header d-flex align-items-center">
+                                            <span class="pro-icon me-2"><i class="fas fa-link"></i></span>
+                                            <span class="pro-title">{{ rel_model_name|title }}</span>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive pro-table-responsive">
+                                                <table class="table pro-table mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            {% for field in related_fields|get_item:rel_model_name %}
+                                                                {% if field %}
+                                                                    <th>{{ field.verbose_name|capfirst }}</th>
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for obj in objects %}
+                                                            {% if obj %}
+                                                                <tr>
+                                                                    {% for field in related_fields|get_item:rel_model_name %}
+                                                                        {% if field %}
+                                                                            <td>
+                                                                                {% with value=obj|get_attribute:field.name %}
+                                                                                    {% if value is not None and value != "" %}
+                                                                                        {{ value }}
+                                                                                    {% else %}
+                                                                                        <span class="text-muted">—</span>
+                                                                                    {% endif %}
+                                                                                {% endwith %}
+                                                                            </td>
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                </tr>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back button -->
+                <div class="row justify-content-center mt-4">
+                    <div class="col-12 text-center">
+                        <a href="{% url 'licenses:search' %}" class="btn btn-outline-primary btn-lg pro-back-btn">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Search Results
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Record not found message -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-lg-8">
+                <div class="alert alert-danger text-center py-5 shadow-lg border-danger border-2 pro-alert">
+                    <h2 class="mb-3">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Record Not Found
+                    </h2>
+                    <p class="lead mb-4">
+                        The requested license record could not be found.<br>
+                        Please check the License Number or try searching again.
+                    </p>
+                    <a href="{% url 'licenses:search' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-search me-2"></i>Back to Search
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+:root {
+    --pro-primary: #1a2233;
+    --pro-accent: #2563eb;
+    --pro-success: #22c55e;
+    --pro-danger: #ef4444;
+    --pro-bg: #f6f8fa;
+    --pro-card-bg: #fff;
+    --pro-border: #e5e7eb;
+    --pro-muted: #6b7280;
+    --pro-header-bg: linear-gradient(90deg, #2563eb 0%, #1a2233 100%);
+}
+.license-detail-pro {
+    background: var(--pro-bg);
+    min-height: 100vh;
+}
+.pro-card {
+    border-radius: 0.75rem;
+    background: var(--pro-card-bg);
+    border: 1px solid var(--pro-border);
+    box-shadow: 0 2px 12px rgba(30,41,59,0.07);
+}
+.pro-header {
+    background: var(--pro-header-bg);
+    color: #fff;
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    min-height: 48px;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--pro-border);
+}
+.pro-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+.pro-icon {
+    font-size: 1.3rem;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.pro-badge {
+    font-size: 0.85rem;
+    padding: 0.25em 0.7em;
+    border-radius: 0.5em;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+.pro-dl {
+    margin-bottom: 0;
+}
+.pro-dt {
+    font-weight: 500;
+    color: var(--pro-muted);
+    font-size: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pro-border);
+}
+.pro-dd {
+    font-size: 1.05rem;
+    color: var(--pro-primary);
+    font-weight: 500;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pro-border);
+    text-align: right;
+}
+.pro-dl dt:last-child, .pro-dl dd:last-child {
+    border-bottom: none;
+}
+.pro-table-responsive {
+    max-height: 320px;
+    overflow-y: auto;
+}
+.pro-table {
+    font-size: 0.97rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--pro-card-bg);
+}
+.pro-table th, .pro-table td {
+    vertical-align: middle !important;
+    border-top: 1px solid var(--pro-border);
+    border-bottom: 1px solid var(--pro-border);
+    padding: 0.55rem 0.75rem;
+}
+.pro-table th {
+    background: #f1f5f9;
+    color: var(--pro-primary);
+    font-weight: 600;
+    font-size: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.pro-table tbody tr:hover {
+    background: #e0e7ef;
+    transition: background 0.15s;
+}
+.pro-back-btn {
+    font-size: 1.1rem;
+    padding: 0.6rem 2.2rem;
+    border-radius: 2rem;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.pro-back-btn:hover {
+    background: var(--pro-accent) !important;
+    color: #fff !important;
+    border-color: var(--pro-accent) !important;
+}
+.pro-alert {
+    border-radius: 0.75rem;
+    border-width: 2px !important;
+    background: #fff;
+}
+@media (max-width: 991.98px) {
+    .pro-card, .pro-alert {
+        border-radius: 0.5rem;
+    }
+    .pro-header {
+        border-top-left-radius: 0.5rem;
+        border-top-right-radius: 0.5rem;
+        font-size: 1rem;
+        padding: 0.6rem 1rem;
+    }
+    .pro-table th, .pro-table td {
+        font-size: 0.93rem;
+        padding: 0.45rem 0.5rem;
+    }
+    .pro-back-btn {
+        font-size: 1rem;
+        padding: 0.5rem 1.5rem;
+    }
+}
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+}
+</style>
+{% endblock %}

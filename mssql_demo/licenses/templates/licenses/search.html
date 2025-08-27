@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}
+    Search Results - License Search System
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-4">
+    <div class="col-xl-9 col-lg-10">
+
+        <!-- Search Form Card -->
+        <div class="card shadow-sm border-0 mb-4 pro-search-card">
+            <div class="card-body px-4 py-4">
+                <h2 class="text-center mb-4 pro-section-title">
+                    <i class="fa-solid fa-magnifying-glass me-2"></i>License Record Search
+                </h2>
+                <form method="get" action="{% url 'licenses:search' %}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="licenseno" class="form-label pro-label">License Number</label>
+                            <input type="text" class="form-control pro-input" id="licenseno" name="licenseno"
+                                   value="{{ search_params.licenseno|default_if_none:'' }}" placeholder="e.g. 123456">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cnic" class="form-label pro-label">CNIC</label>
+                            <input type="text" class="form-control pro-input" id="cnic" name="cnic"
+                                   value="{{ search_params.cnic|default_if_none:'' }}" placeholder="e.g. 35202-1234567-1">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="name" class="form-label pro-label">Name</label>
+                            <input type="text" class="form-control pro-input" id="name" name="name"
+                                   value="{{ search_params.name|default_if_none:'' }}" placeholder="Name">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fathername" class="form-label pro-label">Father Name</label>
+                            <input type="text" class="form-control pro-input" id="fathername" name="fathername"
+                                   value="{{ search_params.fathername|default_if_none:'' }}" placeholder="Father Name">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="dob" class="form-label pro-label">Date of Birth</label>
+                            <input type="text" class="form-control pro-input" id="dob" name="dob"
+                                   value="{{ search_params.dob|default_if_none:'' }}" placeholder="YYYY-MM-DD">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="address" class="form-label pro-label">Address</label>
+                            <input type="text" class="form-control pro-input" id="address" name="address"
+                                   value="{{ search_params.address|default_if_none:'' }}" placeholder="Address">
+                        </div>
+                        <div class="col-12 mt-3 text-center">
+                            <button type="submit" class="btn btn-primary px-5 py-2 pro-btn">
+                                <i class="fa-solid fa-magnifying-glass me-2"></i>Search
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="container mt-4" style="max-width: 1475px;">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show pro-alert" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>{{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        {% if results %}
+            <!-- Results Summary -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-auto">
+                    <div class="pro-summary-card pro-summary-new">
+                        <div class="pro-summary-label">
+                            <i class="fas fa-certificate me-1"></i>New License
+                        </div>
+                        <div class="pro-summary-value">{{ db_counts.new_database|default:0 }}</div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="pro-summary-card pro-summary-old">
+                        <div class="pro-summary-label">
+                            <i class="fas fa-archive me-1"></i>Old License
+                        </div>
+                        <div class="pro-summary-value">{{ db_counts.old_database|default:0 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table pro-table align-middle shadow-sm">
+                    <thead>
+                        <tr>
+                            <th>Lic#</th>
+                            <th>Name</th>
+                            <th>F. Name</th>
+                            <th>DOB</th>
+                            <th>Address</th>
+                            <th>CNIC</th>
+                            <th>Source</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                            <tr>
+                                <td>
+                                    {% if result.data.licenseno %}
+                                        <span class="fw-semibold text-primary">{{ result.data.licenseno }}</span>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ result.data.name|default:"—"|title }}
+                                </td>
+                                <td>
+                                    {{ result.data.fathername|default:"—"|title }}
+                                </td>
+                                <td>
+                                    {% if result.data.dob %}
+                                        <span class="badge bg-light text-dark border">{{ result.data.dob|format_date:"Y-m-d" }}</span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="text-break">{{ result.data.address|default:"—" }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-monospace">{{ result.data.cnic|default:"—" }}</span>
+                                </td>
+                                <td>
+                                    {% if result.db_source == "New Database" %}
+                                        <span class="badge bg-success pro-source-badge">New</span>
+                                    {% elif result.db_source == "Old Database" %}
+                                        <span class="badge bg-secondary pro-source-badge">Old</span>
+                                    {% else %}
+                                        <span class="badge bg-info text-dark pro-source-badge">{{ result.db_source }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'licenses:license_detail' result.model result.primary_key %}"
+                                       class="btn btn-sm btn-outline-primary pro-circle-btn" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-exclamation-circle me-2"></i>No results found.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if results.has_other_pages %}
+                <nav aria-label="Search results pagination" class="mb-4">
+                    <ul class="pagination justify-content-center mt-3 pro-pagination">
+                        {% if results.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in search_params.items %}{% if value %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ results.previous_page_number }}" aria-label="Previous">
+                                    &laquo;
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                        {% endif %}
+                        {% for num in results.paginator.page_range %}
+                            {% if results.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > results.number|add:'-3' and num < results.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in search_params.items %}{% if value %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if results.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in search_params.items %}{% if value %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ results.next_page_number }}" aria-label="Next">
+                                    &raquo;
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% elif has_search %}
+            <div class="alert alert-warning text-center mt-4 mb-4 pro-alert">
+                <i class="fas fa-exclamation-circle me-2"></i>No records found matching your search criteria.
+            </div>
+        {% endif %}
+
+        <div class="mt-5 text-center">
+            <a href="{% url 'licenses:search' %}" class="btn btn-link pro-link">
+                <i class="fas fa-home me-1"></i>Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --pro-primary: #2563eb;
+        --pro-primary-dark: #1e40af;
+        --pro-bg: #f4f6fa;
+        --pro-table-header: #1e293b;
+        --pro-table-row-hover: #e0e7ef;
+        --pro-border: #d1d5db;
+        --pro-success: #22c55e;
+        --pro-warning: #facc15;
+        --pro-danger: #ef4444;
+        --pro-info: #38bdf8;
+    }
+    .pro-search-card {
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 2px 12px 0 rgba(30, 41, 59, 0.08);
+        border: 1px solid var(--pro-border);
+    }
+    .pro-section-title {
+        font-weight: 600;
+        color: var(--pro-primary);
+        letter-spacing: 0.5px;
+        font-size: 1.7rem;
+        margin-bottom: 1.5rem;
+    }
+    .pro-label {
+        font-weight: 500;
+        color: #334155;
+        font-size: 1.02rem;
+        margin-bottom: 0.2rem;
+    }
+    .pro-input {
+        border-radius: 8px;
+        font-size: 1rem;
+        background: #f8fafc;
+        border: 1px solid var(--pro-border);
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-shadow: none;
+    }
+    .pro-input:focus {
+        border-color: var(--pro-primary);
+        box-shadow: 0 0 0 0.08rem rgba(37,99,235,.12);
+        background: #fff;
+    }
+    .pro-btn {
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 1.08rem;
+        background: var(--pro-primary);
+        border: none;
+        transition: background 0.2s, color 0.2s;
+        color: #fff;
+        box-shadow: 0 2px 8px 0 rgba(37,99,235,0.08);
+    }
+    .pro-btn:hover, .btn-outline-primary:hover {
+        background: var(--pro-primary-dark);
+        color: #fff;
+    }
+    .pro-summary-card {
+        min-width: 120px;
+        padding: 0.9rem 1.7rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 6px 0 rgba(30, 41, 59, 0.06);
+        text-align: center;
+        margin: 0 0.5rem;
+        border: 1px solid var(--pro-border);
+        background: #f8fafc;
+    }
+    .pro-summary-label {
+        font-size: 1.01rem;
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 0.18rem;
+    }
+    .pro-summary-value {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--pro-primary);
+    }
+    .pro-summary-new {
+        background: linear-gradient(90deg, #e0f2fe 70%, #f0fdf4 100%);
+    }
+    .pro-summary-old {
+        background: linear-gradient(90deg, #f3f4f6 70%, #e5e7eb 100%);
+    }
+    .pro-table {
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 2px 10px 0 rgba(30, 41, 59, 0.04);
+        border: 1px solid var(--pro-border);
+    }
+    .pro-table thead th {
+        background: var(--pro-table-header);
+        color: #fff;
+        border: none;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        font-size: 1.01rem;
+        padding-top: 0.85rem !important;
+        padding-bottom: 0.85rem !important;
+    }
+    .pro-table tbody tr {
+        border-bottom: 1px solid var(--pro-border);
+        transition: background 0.15s;
+    }
+    .pro-table tbody tr:hover {
+        background: var(--pro-table-row-hover) !important;
+    }
+    .pro-table td {
+        padding-top: 0.85rem !important;
+        padding-bottom: 0.85rem !important;
+        vertical-align: middle;
+        font-size: 0.98rem;
+    }
+    .pro-source-badge {
+        font-size: 0.93em;
+        padding: 0.38em 0.8em;
+        border-radius: 7px;
+        font-weight: 500;
+        letter-spacing: 0.4px;
+    }
+    .pro-circle-btn {
+        border-radius: 50% !important;
+        width: 2.1em;
+        height: 2.1em;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid var(--pro-primary);
+        color: var(--pro-primary);
+        background: #fff;
+        transition: background 0.2s, color 0.2s;
+    }
+    .pro-circle-btn:hover {
+        background: var(--pro-primary);
+        color: #fff;
+    }
+    .pro-alert {
+        border-radius: 10px;
+        font-size: 1.05rem;
+        background: linear-gradient(90deg, #fef9c3 80%, #fef3c7 100%);
+        color: #92400e;
+        border: 1px solid #fde68a;
+    }
+    .pro-link {
+        font-weight: 600;
+        color: var(--pro-primary);
+        font-size: 1.08rem;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .pro-link:hover {
+        color: var(--pro-primary-dark);
+        text-decoration: underline;
+    }
+    .pro-pagination .page-link {
+        border-radius: 6px !important;
+        color: var(--pro-primary);
+        border: 1px solid var(--pro-border);
+        font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+    }
+    .pro-pagination .page-item.active .page-link {
+        background: var(--pro-primary);
+        color: #fff;
+        border-color: var(--pro-primary);
+    }
+    .pro-pagination .page-link:hover {
+        background: var(--pro-primary-dark);
+        color: #fff;
+        border-color: var(--pro-primary-dark);
+    }
+    @media (max-width: 991.98px) {
+        .pro-search-card, .pro-table {
+            border-radius: 8px;
+        }
+        .pro-summary-card {
+            padding: 0.7rem 1rem;
+            min-width: 90px;
+        }
+        .pro-section-title {
+            font-size: 1.2rem;
+        }
+    }
+    @media (max-width: 767.98px) {
+        .pro-search-card, .pro-table {
+            border-radius: 6px;
+        }
+        .pro-section-title {
+            font-size: 1rem;
+        }
+        .pro-summary-card {
+            padding: 0.5rem 0.7rem;
+        }
+    }
+</style>
+{% endblock %}
